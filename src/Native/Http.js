@@ -1,4 +1,4 @@
-var _FabienHenon$http$Native_Http = function() {
+var _elm_lang$http$Native_Http = function() {
 
 
 // ENCODING AND DECODING
