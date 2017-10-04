@@ -1,4 +1,4 @@
-var _elm_lang$http$Native_Http = function() {
+var _FabienHenon$http$Native_Http = function() {
 
 
 // ENCODING AND DECODING
@@ -23,13 +23,13 @@ function decodeUri(string)
 
 // SEND REQUEST
 
-function toTask(request, maybeProgress)
+function toTask(request, maybeDownloadProgress, maybeUploadProgress)
 {
 	return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
 	{
 		var xhr = new XMLHttpRequest();
 
-		configureProgress(xhr, maybeProgress);
+		configureProgress(xhr, maybeDownloadProgress, maybeUploadProgress);
 
 		xhr.addEventListener('error', function() {
 			callback(_elm_lang$core$Native_Scheduler.fail({ ctor: 'NetworkError' }));
@@ -57,23 +57,38 @@ function toTask(request, maybeProgress)
 	});
 }
 
-function configureProgress(xhr, maybeProgress)
+function configureProgress(xhr, maybeDownloadProgress, maybeUploadProgress)
 {
-	if (maybeProgress.ctor === 'Nothing')
-	{
-		return;
-	}
+	if (maybeDownloadProgress.ctor !== 'Nothing')
+  {
+  	xhr.addEventListener('progress', function(event) {
+  		if (!event.lengthComputable)
+  		{
+  			return;
+  		}
+  		_elm_lang$core$Native_Scheduler.rawSpawn(maybeDownloadProgress._0({
+  			bytes: event.loaded,
+  			bytesExpected: event.total
+  		}));
+  	});
+  }
 
-	xhr.addEventListener('progress', function(event) {
-		if (!event.lengthComputable)
-		{
-			return;
-		}
-		_elm_lang$core$Native_Scheduler.rawSpawn(maybeProgress._0({
-			bytes: event.loaded,
-			bytesExpected: event.total
-		}));
-	});
+  if (maybeUploadProgress.ctor !== 'Nothing')
+  {
+    if (xhr.upload)
+    {
+		  xhr.upload.addEventListener('progress', function(event) {
+    		if (!event.lengthComputable)
+    		{
+    			return;
+    		}
+    		_elm_lang$core$Native_Scheduler.rawSpawn(maybeUploadProgress._0({
+    			bytes: event.loaded,
+    			bytesExpected: event.total
+    		}));
+  	   });
+     }
+  }
 }
 
 function configureRequest(xhr, request)
@@ -227,7 +242,7 @@ function multipart(parts)
 }
 
 return {
-	toTask: F2(toTask),
+	toTask: F3(toTask),
 	expectStringResponse: expectStringResponse,
 	mapExpect: F2(mapExpect),
 	multipart: multipart,
